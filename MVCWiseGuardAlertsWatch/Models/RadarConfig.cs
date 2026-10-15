@@ -22,7 +22,8 @@ namespace MVCWiseGuardAlertsWatch.Models
 
     public class RadarInstance
     {
-        public List<int> LocationIds { get; set; } = new();
+        public List<string> Names { get; set; } = new();
+        public List<int> LocationIds { get; set; } = new(); // legacy (saved-name mode)
         public int? ProxyId { get; set; }
         public bool Loop { get; set; }
     }

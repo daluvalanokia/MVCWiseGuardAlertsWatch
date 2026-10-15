@@ -9,17 +9,24 @@
 </head>
 <body>
     <header class="topbar">
-        <div class="brand"><span class="brand-icon">&#128737;</span> WiseGuardAlertsWatch</div>
-        <nav>
-            <a asp-controller="Home" asp-action="Index">Dashboard</a>
-            <a asp-controller="Settings" asp-action="Index">Settings</a>
+        <div class="brand">
+            <span class="brand-badge">&#128205;</span>
+            <span>Location Radar</span>
+            <span class="brand-sub">6 instances</span>
+        </div>
+        <div class="topbar-right">
             @if (User.Identity?.IsAuthenticated == true)
             {
+                <a class="link-btn" asp-controller="Settings" asp-action="Index" title="Settings">&#9881; Settings</a>
                 <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
-                    <button type="submit" class="link-btn">Sign out</button>
+                    <button type="submit" class="btn small">Sign out</button>
                 </form>
             }
-        </nav>
+            else
+            {
+                <a class="link-btn" asp-controller="Account" asp-action="Login">Sign in</a>
+            }
+        </div>
     </header>
     <main class="container">
         @RenderBody()

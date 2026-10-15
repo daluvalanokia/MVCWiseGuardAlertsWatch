@@ -9,18 +9,6 @@ window.SettingsProxy = (function () {
         return await resp.json();
     }
 
-    async function addProxy() {
-        const name = document.getElementById('proxyName').value.trim();
-        if (!name) { alert('Enter a proxy name.'); return; }
-        // Use the current map center if provided by the dashboard; otherwise geocode
-        const center = window.APP_CENTER || [33.4735, -82.0105];
-        const resp = await fetch('/Settings/AddProxyLocation', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, lat: center[0], lon: center[1] })
-        });
-        if (resp.ok) location.reload();
-    }
-
     async function geocodeAdd() {
         const query = document.getElementById('proxyQuery').value.trim();
         if (query.length < 2) return;
@@ -30,7 +18,7 @@ window.SettingsProxy = (function () {
         const name = document.getElementById('proxyName').value.trim() || query;
         const resp = await fetch('/Settings/AddProxyLocation', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, lat: first.position[0], lon: first.position[1] })
+            body: JSON.stringify({ name: name, displayName: first.label, lat: first.position[0], lon: first.position[1] })
         });
         if (resp.ok) location.reload();
     }
@@ -65,7 +53,7 @@ window.SettingsProxy = (function () {
         location.reload();
     }
 
-    return { addProxy, geocodeAdd, geocodeCustom, testModels, deleteRadarConfig };
+    return { geocodeAdd, geocodeCustom, testModels, deleteRadarConfig };
 })();
 
 window.SettingsGuard = (function () {

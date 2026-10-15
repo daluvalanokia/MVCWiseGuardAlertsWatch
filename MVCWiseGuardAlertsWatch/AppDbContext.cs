@@ -50,6 +50,14 @@ namespace MVCWiseGuardAlertsWatch
                 OpenRouterModel = "google/gemma-4-26b-a4b-it:free"
             });
 
+            modelBuilder.Entity<ProxyLocation>().HasData(
+                new ProxyLocation { Id = 1, Name = "Tallada", DisplayName = "Tallada, Thallada mandal, Khammam, Telangana, 507167, India", Lat = 17.2181818, Lon = 80.4199516 },
+                new ProxyLocation { Id = 2, Name = "Technology Park", DisplayName = "Technology Park, Lake Mary, Seminole County, Florida, 32795, United States", Lat = 28.7366409, Lon = -81.3623939 },
+                new ProxyLocation { Id = 3, Name = "Choppadandi", DisplayName = "Choppadandi, Choppadandi mandal, Karimnagar, Telangana, 557654, India", Lat = 18.5773287, Lon = 79.1675524 },
+                new ProxyLocation { Id = 4, Name = "Agali", DisplayName = "Agali, Mannarkad, Palakkad, Kerala, 678581, India", Lat = 11.1057095, Lon = 76.6547629 },
+                new ProxyLocation { Id = 5, Name = "Venice", DisplayName = "Venice, Venezia, Veneto, 30121-30176, Italy", Lat = 45.4371908, Lon = 12.3345898 }
+            );
+
             modelBuilder.Entity<SearchLocation>().HasData(
                 new SearchLocation { Id = 1, Name = "Temple", Color = "blue", Icon = "landmark", Enabled = true },
                 new SearchLocation { Id = 2, Name = "Pharmacy", Color = "green", Icon = "pill", Enabled = true },

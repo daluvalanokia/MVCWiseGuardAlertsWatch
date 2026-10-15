@@ -1,120 +1,120 @@
 @model DashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Location Radar";
     var settings = Model.Settings;
+    var jsonOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
     var radarConfigsJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.RadarConfigs.Select(c => new { c.Id, c.Name, c.InstancesJson }));
+        Model.RadarConfigs.Select(c => new { c.Id, c.Name, c.InstancesJson }), jsonOpts);
+    var proxiesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Proxies.Select(p => new { p.Id, Name = p.DisplayName ?? p.Name, p.Lat, p.Lon }), jsonOpts);
 }
 <div id="dashboard"
      data-interval="@settings.SearchIntervalSeconds"
      data-step="@settings.SearchRadiusStepMeters"
      data-max="@settings.MaxRadiusMeters"
-     data-locations='@System.Text.Json.JsonSerializer.Serialize(Model.Locations)'
-     data-proxies='@System.Text.Json.JsonSerializer.Serialize(Model.Proxies)'
+     data-proxies='@proxiesJson'
      data-radar-configs='@radarConfigsJson'
-     data-dynamic='@System.Text.Json.JsonSerializer.Serialize(new { Model.DynamicData.Enabled, Model.DynamicData.Provider })'>
+     data-dynamic='@System.Text.Json.JsonSerializer.Serialize(new { Model.DynamicData.Enabled, Model.DynamicData.Provider }, jsonOpts)'></div>
+
+<div class="dash-toolbar">
+    <input id="configName" class="input" placeholder="Config name" style="width:150px" />
+    <select id="configSelect" class="input" style="max-width:220px">
+        <option value="">Saved configs...</option>
+    </select>
+    <button id="saveConfigBtn" class="btn dark">&#128190; Save</button>
+    <button id="startAllBtn" class="btn green">&#9654; Start All</button>
+    <button id="stopAllBtn" class="btn red">&#9632; Stop All</button>
 </div>
 
-<div class="panel-shell">
-    <div class="panel-header">
-        <div class="instance-nav">
-            <button id="prevInstance" class="icon-btn" title="Previous instance">&#9664;</button>
-            <div id="instanceDots" class="instance-dots"></div>
-            <button id="nextInstance" class="icon-btn" title="Next instance">&#9654;</button>
-            <span id="instanceLabel" class="instance-label">Instance 1</span>
-        </div>
-        <div class="panel-actions">
-            <button id="loadConfigBtn" class="btn small">Load Config</button>
-            <select id="configSelect" class="input small"></select>
-            <button id="saveConfigBtn" class="btn small">Save Config</button>
-        </div>
-    </div>
-
-    @for (int i = 0; i < 5; i++)
+<div class="grid-6">
+    @for (int i = 1; i <= 5; i++)
     {
-        var idx = i + 1;
-        <section class="instance-panel" id="panel-@idx" style="display:none">
-            <div class="panel-controls">
-                <div class="control-group">
-                    <label>Search Names</label>
-                    <div id="names-@idx" class="multiselect" data-instance="@idx"></div>
-                </div>
-                <div class="control-group">
-                    <label>Proxy Location</label>
-                    <select id="proxy-@idx" class="input small"><option value="">None</option></select>
-                </div>
-                <div class="control-group">
-                    <label class="checkbox"><input type="checkbox" id="loop-@idx" /> Loop</label>
-                </div>
-                <div class="control-group">
-                    <button class="btn primary" onclick="Dashboard.start(@idx)">Start</button>
-                    <button class="btn danger" onclick="Dashboard.stop(@idx)">Stop</button>
-                    <span class="config-summary" id="cfg-@idx"></span>
-                </div>
+        <section class="inst-card" id="card-@i">
+            <div class="inst-head">
+                <span class="inst-icon">@i</span>
+                <span class="inst-title">Instance @i</span>
+                <span class="inst-status" id="status-@i">Idle</span>
+                <span class="inst-found" id="found-@i" style="display:none"></span>
+                <button class="inst-collapse" onclick="Dashboard.toggleCollapse(@i)" title="Collapse">&#9662;</button>
             </div>
-            <div class="map-wrap"><div id="map-@idx" class="map"></div>
-                <div id="flash-@idx" class="flash-banner" style="display:none"></div>
-            </div>
-            <div class="status-panel" id="status-@idx"></div>
-            <div class="dynamic-panel">
-                <div class="dynamic-head">
-                    <button class="link-btn" onclick="Dashboard.toggleDynamic(@idx)">Dynamic Data &#9662;</button>
-                    <span id="dd-state-@idx" class="muted small"></span>
-                </div>
-                <div id="dd-body-@idx" style="display:none">
-                    <div class="dynamic-row">
-                        <input id="dd-prompt-@idx" class="input" placeholder="Ask about the search results..." />
-                        <button class="btn small" onclick="Dashboard.fetchDynamic(@idx)">Ask</button>
+            <div class="inst-body" id="body-@i">
+                <div class="inst-controls">
+                    <div class="names-wrap">
+                        <input id="names-@i" class="input names-input" placeholder="alert, park"
+                               value="alert, park" oninput="Dashboard.onNamesInput(@i)" />
+                        <button class="names-toggle" onclick="Dashboard.toggleNamesPop(@i)">&#9662;</button>
+                        <div id="namespop-@i" class="names-pop" style="display:none"></div>
                     </div>
-                    <div id="dd-result-@idx" class="dynamic-result muted small"></div>
+                    <button id="search-@i" class="btn primary" onclick="Dashboard.toggleSearch(@i)">&#128269; Search</button>
+                    <label class="checkbox"><input type="checkbox" id="loop-@i" onchange="Dashboard.onLoop(@i)" /> Loop</label>
                 </div>
+                <div class="proxy-wrap">
+                    <span class="loc-ico">&#128205;</span>
+                    <select id="proxy-@i" class="input proxy-select" onchange="Dashboard.onProxy(@i)"></select>
+                </div>
+                <div class="map-wrap">
+                    <div id="map-@i" class="map"></div>
+                    <div id="pill-@i" class="map-pill">Search location</div>
+                    <div id="flash-@i" class="flash-banner" style="display:none"></div>
+                </div>
+                <div id="threads-@i"></div>
             </div>
         </section>
     }
 
-    <section class="instance-panel" id="panel-6" style="display:none">
-        <div class="panel-controls">
-            <div class="control-group"><span class="instance-title">WiseGuard Panel</span></div>
-            <div class="control-group">
-                <button id="micBtn" class="btn primary">Start Listening</button>
-                <span id="micState" class="muted small">idle</span>
-                <span id="decibels" class="muted small"></span>
-            </div>
-            <div class="control-group">
-                <button class="link-btn" onclick="Guard.toggleConfig()">Word Config &#9662;</button>
-                <button class="link-btn" onclick="Guard.toggleVideoMax()">Maximize Video</button>
-            </div>
+    <section class="inst-card" id="card-6">
+        <div class="inst-head">
+            <span class="inst-icon">6</span>
+            <span class="inst-title">Instance 6 - WiseGuard</span>
+            <span class="inst-status" id="guard-status">Idle</span>
+            <button class="inst-collapse" onclick="Dashboard.toggleCollapse(6)" title="Collapse">&#9662;</button>
         </div>
-        <div id="wordConfig" style="display:none" class="card pad">
-            <div class="dynamic-row">
-                <input id="wordInput" class="input" placeholder="Add tracked word(s), comma separated" />
-                <button class="btn small" onclick="Guard.addWord()">Add</button>
-            </div>
-            <div id="wordList" class="chip-row"></div>
-        </div>
-        <div class="guard-grid">
-            <div class="card pad">
-                <h3>Transcript</h3>
-                <div id="transcript" class="transcript"></div>
-                <div id="interim" class="interim"></div>
-            </div>
-            <div class="card pad">
-                <h3>Word Counts</h3>
-                <div id="wordCounts" class="counts"></div>
-            </div>
-            <div class="card pad video-card">
-                <div class="dynamic-row">
-                    <input id="videoUrl" class="input" placeholder="YouTube URL" />
-                    <button class="btn small" onclick="Guard.addVideo()">Add Video</button>
+        <div class="inst-body" id="body-6">
+            <p class="guard-sub">Speak in Telugu — see it as text</p>
+            <div class="guard-top">
+                <button id="micBtn" class="mic-btn" onclick="Guard.toggleListening()">&#127908;</button>
+                <div>
+                    <div class="mic-label" id="micLabel">TAP TO START</div>
+                    <div class="muted small" id="micState"></div>
                 </div>
-                <div id="videoPlayer" class="video-frame"></div>
-                <label class="checkbox"><input type="checkbox" id="videoLoop" checked /> Loop</label>
+                <div class="guard-actions">
+                    <button class="icon-btn" title="Toggle word tracker config" onclick="Guard.toggleConfig()">&#9881;</button>
+                    <button class="icon-btn" title="Maximize video" onclick="Guard.toggleVideoMax()">&#x26F6;</button>
+                </div>
+            </div>
+            <div id="wordConfig" class="word-config" style="display:none">
+                <div class="inst-controls">
+                    <input id="wordInput" class="input" style="flex:1" placeholder="Add tracked word(s), comma separated"
+                           onkeydown="if(event.key==='Enter')Guard.addWord()" />
+                    <button class="btn small" onclick="Guard.addVideoFromList()">Reload video</button>
+                </div>
+                <div id="wordList" class="chip-row"></div>
+                <div class="inst-controls">
+                    <input id="videoUrl" class="input" style="flex:1" placeholder="YouTube URL" />
+                    <button class="btn small" onclick="Guard.addVideo()">Add video</button>
+                </div>
                 <div id="videoList" class="video-list"></div>
             </div>
+            <div class="transcript-box" id="transcript">
+                <span class="placeholder">Your Telugu speech will appear here...</span>
+            </div>
+            <div class="interim" id="interim"></div>
+            <div class="guard-video" id="videoPlayer"></div>
+            <div class="video-controls">
+                <button class="btn small primary" onclick="Guard.togglePause()">Pause</button>
+                <button class="btn small" onclick="Guard.stopVideo()">Stop</button>
+                <label class="checkbox"><input type="checkbox" id="videoLoop" checked onchange="Guard.onLoopChange()" /> Loop</label>
+                <input type="range" id="videoSlider" class="video-slider" min="0" max="100" value="0"
+                       oninput="Guard.onSeek(this.value)" />
+            </div>
+            <div class="counts-head">Repeat Counts <button class="link-btn small" onclick="Guard.resetCounts()">reset</button></div>
+            <div id="wordCounts" class="counts-list"></div>
         </div>
     </section>
 </div>
 
+@section Scripts {
 <script src="~/js/dashboard.js" asp-append-version="true"></script>
 <script src="~/js/guard.js" asp-append-version="true"></script>
 <script>Dashboard.init(); Guard.init();</script>
+}

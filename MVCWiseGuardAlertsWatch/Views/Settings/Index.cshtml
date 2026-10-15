@@ -65,18 +65,17 @@ else if (Model.ActiveTab == "proxy")
     <div class="card pad">
         <h3>Proxy Locations</h3>
         <div class="form-row">
-            <input id="proxyName" class="input" placeholder="Name" />
-            <button class="btn primary" onclick="SettingsProxy.add()">Add from map center search</button>
+            <input id="proxyName" class="input" placeholder="Short name" />
             <input id="proxyQuery" class="input" placeholder="City, State (Nominatim)" />
             <button class="btn" onclick="SettingsProxy.geocodeAdd()">Geocode &amp; Add</button>
         </div>
         <table class="table">
-            <thead><tr><th>Name</th><th>Lat</th><th>Lon</th><th></th></tr></thead>
+            <thead><tr><th>Display name</th><th>Lat</th><th>Lon</th><th></th></tr></thead>
             <tbody>
             @foreach (var p in Model.Proxies)
             {
                 <tr>
-                    <td>@p.Name</td><td>@p.Lat.ToString("F5")</td><td>@p.Lon.ToString("F5")</td>
+                    <td>@(p.DisplayName ?? p.Name)</td><td>@p.Lat.ToString("F5")</td><td>@p.Lon.ToString("F5")</td>
                     <td>
                         <form asp-action="DeleteProxyLocation" method="post" class="inline-form">
                             <input type="hidden" name="id" value="@p.Id" />

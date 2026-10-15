@@ -75,7 +75,12 @@ namespace MVCWiseGuardAlertsWatch.Controllers
         public async Task<IActionResult> AddProxyLocation([FromBody] AddProxyRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest(new { error = "Name is required" });
-            _db.ProxyLocations.Add(new ProxyLocation { Name = req.Name.Trim(), Lat = req.Lat, Lon = req.Lon });
+            _db.ProxyLocations.Add(new ProxyLocation
+            {
+                Name = req.Name.Trim(),
+                DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? req.Name.Trim() : req.DisplayName.Trim(),
+                Lat = req.Lat, Lon = req.Lon
+            });
             await _db.SaveChangesAsync();
             return Ok(new { ok = true });
         }
@@ -128,6 +133,7 @@ namespace MVCWiseGuardAlertsWatch.Controllers
     public class AddProxyRequest
     {
         public string Name { get; set; } = "";
+        public string? DisplayName { get; set; }
         public double Lat { get; set; }
         public double Lon { get; set; }
     }

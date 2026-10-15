@@ -4,3 +4,6 @@ obj/
 .vs/
 *.db
 wwwroot/uploads/
+*.db-shm
+*.db-wal
+secret.key

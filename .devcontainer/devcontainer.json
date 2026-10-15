@@ -1,0 +1,15 @@
+{
+  "name": "MVCWiseGuardAlertsWatch",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+  "forwardPorts": [5193, 8080],
+  "portsAttributes": {
+    "5193": { "label": "MVC app (profile)", "onAutoForward": "openBrowser" },
+    "8080": { "label": "MVC app (ASPNETCORE_URLS)", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "dotnet restore MVCWiseGuardAlertsWatch.sln",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csharp"]
+    }
+  }
+}

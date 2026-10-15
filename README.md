@@ -57,6 +57,31 @@ dotnet run
 Open the URL shown in the console (default profile: `http://localhost:5193`). The SQLite
 database (`wiseguard.db`) is auto-created and seeded on first run.
 
+### GitHub Codespaces
+
+The repo includes a `.devcontainer` (VS Code dev container with .NET 8). Open the repo
+in a codespace, wait for the post-create restore, then:
+
+```bash
+dotnet run --launch-profile http   # or: ASPNETCORE_URLS=http://0.0.0.0:8080 dotnet run --no-launch-profile
+```
+
+Forwarded ports (5193 / 8080) open the app in the codespace's browser preview.
+
+## Dashboard (v2 — matches wiseguardalertswatch.base44.app)
+
+- Light theme, 2x3 grid with all 6 instances visible (no rotating carousel).
+- Global toolbar: config name input, saved-configs dropdown, Save, Start All, Stop All.
+- Instances 1-5: free-text comma-separated search names (checkbox popover),
+  Search/Stop toggle button, Loop checkbox, proxy-location dropdown with full
+  geocoded display names ("No proxy (use search location)" default), Leaflet map
+  with center pin + address pill, Idle/Running status with "N found · X.Xmi".
+- Instance 6 (WiseGuard): "Speak in Telugu — see it as text", TAP TO START mic button,
+  live transcript area, word tracker config popover, video player with maximize,
+  Pause/Stop/Loop buttons and a progress slider, Repeat Counts chips with reset.
+- Radar configs persist per-instance names/proxy/loop; proxy locations seed the five
+  live-app samples (Tallada, Technology Park, Choppadandi, Agali, Venice).
+
 ### Configuration (appsettings.json)
 
 | Key | Purpose |
