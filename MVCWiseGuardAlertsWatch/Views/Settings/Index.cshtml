@@ -1,0 +1,189 @@
+@model SettingsViewModel
+@{
+    ViewData["Title"] = "Settings";
+    var tabs = new[] {
+        ("locations", "Locations"), ("proxy", "Proxy Locations"), ("radar", "Radar Configs"),
+        ("guard", "Guard"), ("dynamic", "Dynamic Data"), ("app", "App Settings")
+    };
+}
+<div class="settings-tabs">
+    @foreach (var (id, label) in tabs)
+    {
+        <a asp-action="Index" asp-route-tab="@id" class="tab @(Model.ActiveTab == id ? "active" : "")">@label</a>
+    }
+</div>
+
+@if (Model.ActiveTab == "locations")
+{
+    <div class="card pad">
+        <h3>Search Names</h3>
+        <form asp-action="AddLocation" method="post" class="form-row">
+            <input name="Name" class="input" placeholder="New search name" required />
+            <select name="Color" class="input small">
+                @foreach (var c in new[] { "blue", "green", "red", "amber", "purple", "pink", "teal", "orange" })
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
+            <select name="Icon" class="input small">
+                @foreach (var i in new[] { "map-pin", "landmark", "pill", "utensils", "car", "home", "shopping-bag", "coffee", "fuel", "star" })
+                {
+                    <option value="@i">@i</option>
+                }
+            </select>
+            <button class="btn primary">Add</button>
+        </form>
+        <table class="table">
+            <thead><tr><th>Name</th><th>Color</th><th>Icon</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var loc in Model.Locations)
+            {
+                <tr>
+                    <td>@loc.Name</td>
+                    <td><span class="dot" style="background:@loc.Color"></span> @loc.Color</td>
+                    <td>@loc.Icon</td>
+                    <td class="row-actions">
+                        <form asp-action="UpdateLocationColorIcon" method="post" class="inline-form">
+                            <input type="hidden" name="id" value="@loc.Id" />
+                            <input type="hidden" name="color" value="@loc.Color" />
+                            <input type="hidden" name="icon" value="@loc.Icon" />
+                        </form>
+                        <form asp-action="DeleteLocation" method="post" class="inline-form"
+                              onsubmit="return confirm('Delete @loc.Name?')">
+                            <input type="hidden" name="id" value="@loc.Id" />
+                            <button class="btn danger small">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Model.ActiveTab == "proxy")
+{
+    <div class="card pad">
+        <h3>Proxy Locations</h3>
+        <div class="form-row">
+            <input id="proxyName" class="input" placeholder="Name" />
+            <button class="btn primary" onclick="SettingsProxy.add()">Add from map center search</button>
+            <input id="proxyQuery" class="input" placeholder="City, State (Nominatim)" />
+            <button class="btn" onclick="SettingsProxy.geocodeAdd()">Geocode &amp; Add</button>
+        </div>
+        <table class="table">
+            <thead><tr><th>Name</th><th>Lat</th><th>Lon</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var p in Model.Proxies)
+            {
+                <tr>
+                    <td>@p.Name</td><td>@p.Lat.ToString("F5")</td><td>@p.Lon.ToString("F5")</td>
+                    <td>
+                        <form asp-action="DeleteProxyLocation" method="post" class="inline-form">
+                            <input type="hidden" name="id" value="@p.Id" />
+                            <button class="btn danger small">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Model.ActiveTab == "radar")
+{
+    <div class="card pad">
+        <h3>Radar Configs</h3>
+        <p class="muted small">Save and load per-instance selections (names, proxy, loop) from the dashboard.</p>
+        <table class="table" id="radarConfigsTable">
+            <thead><tr><th>Name</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model.RadarConfigs)
+            {
+                <tr>
+                    <td>@c.Name</td>
+                    <td>
+                        <form asp-action="Index" method="get" class="inline-form">
+                            <input type="hidden" name="tab" value="radar" />
+                        </form>
+                        <button class="btn danger small" onclick="SettingsProxy.deleteRadarConfig(@c.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Model.ActiveTab == "guard")
+{
+    <div class="card pad">
+        <h3>Guard — tracked words &amp; videos</h3>
+        <div class="form-row">
+            <input id="gWordInput" class="input" placeholder="Add tracked word(s), comma separated" />
+            <button class="btn primary" onclick="SettingsProxy.addGuardWord()">Add</button>
+        </div>
+        <div id="gWordList" class="chip-row"></div>
+        <h4>Videos</h4>
+        <table class="table" id="gVideos">
+            <thead><tr><th>Name</th><th>URL</th><th></th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script>SettingsGuard.init(@System.Text.Json.JsonSerializer.Serialize(Model.Guard.GetTrackedWords()));</script>
+}
+else if (Model.ActiveTab == "dynamic")
+{
+    <div class="card pad">
+        <h3>Dynamic Data Provider</h3>
+        <form asp-action="UpdateDynamicData" method="post" class="stack-form">
+            <label class="checkbox"><input type="checkbox" name="Enabled" value="true" @(Model.DynamicData.Enabled ? "checked" : "") /> Enabled</label>
+            <label>Provider</label>
+            <select name="Provider" class="input">
+                <option value="openrouter" selected="@(Model.DynamicData.Provider == "openrouter")">OpenRouter</option>
+                <option value="ollama" selected="@(Model.DynamicData.Provider == "ollama")">Ollama</option>
+            </select>
+            <label>Ollama base URL</label>
+            <input name="OllamaBaseUrl" class="input" value="@Model.DynamicData.OllamaBaseUrl" placeholder="http://localhost:11434" />
+            <label>Ollama API key (stored encrypted)</label>
+            <input name="ollamaKey" type="password" class="input" placeholder="unchanged" />
+            <label>Ollama model</label>
+            <input name="OllamaModel" class="input" value="@Model.DynamicData.OllamaModel" />
+            <label>OpenRouter API key (stored encrypted)</label>
+            <input name="openrouterKey" type="password" class="input" placeholder="unchanged" />
+            <label>OpenRouter model</label>
+            <input name="OpenRouterModel" class="input" value="@Model.DynamicData.OpenRouterModel" />
+            <button class="btn primary">Save</button>
+        </form>
+        <div class="form-row">
+            <button class="btn" onclick="SettingsProxy.testModels('openrouter')">Load OpenRouter Models</button>
+            <select id="orModels" class="input"></select>
+        </div>
+    </div>
+}
+else
+{
+    var s = Model.Settings;
+    <div class="card pad">
+        <h3>App Settings</h3>
+        <form asp-action="UpdateSettings" method="post" class="stack-form">
+            <label>Search interval (seconds)</label>
+            <input name="SearchIntervalSeconds" type="number" min="1" class="input" value="@s.SearchIntervalSeconds" />
+            <label>Radius step (meters)</label>
+            <input name="SearchRadiusStepMeters" type="number" min="50" class="input" value="@s.SearchRadiusStepMeters" />
+            <label>Max radius (meters)</label>
+            <input name="MaxRadiusMeters" type="number" min="50" class="input" value="@s.MaxRadiusMeters" />
+            <label class="checkbox"><input type="checkbox" name="UseCustomLocation" value="true" @(s.UseCustomLocation ? "checked" : "") /> Use custom location instead of device GPS</label>
+            <label>Custom location label</label>
+            <input name="CustomLocationLabel" class="input" value="@s.CustomLocationLabel" />
+            <label>Custom location lat</label>
+            <input name="CustomLat" type="number" step="any" class="input" value="@s.CustomLat" />
+            <label>Custom location lon</label>
+            <input name="CustomLon" type="number" step="any" class="input" value="@s.CustomLon" />
+            <div class="form-row">
+                <input id="customQuery" class="input" placeholder="City, State" />
+                <button type="button" class="btn" onclick="SettingsProxy.geocodeCustom()">Find</button>
+            </div>
+            <button class="btn primary">Save</button>
+        </form>
+    </div>
+}
+<script src="~/js/settings.js" asp-append-version="true"></script>

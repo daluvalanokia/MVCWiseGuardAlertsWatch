@@ -1,0 +1,10 @@
+@model ErrorViewModel
+<div class="card">
+    <h1 class="text-danger">Error</h1>
+    <h2 class="text-danger">An error occurred while processing your request.</h2>
+    @if (Model.ShowRequestId)
+    {
+        <p><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
+    }
+    <p>Try again, and if the problem persists contact your administrator.</p>
+</div>

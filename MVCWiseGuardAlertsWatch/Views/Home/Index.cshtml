@@ -1,0 +1,120 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var settings = Model.Settings;
+    var radarConfigsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.RadarConfigs.Select(c => new { c.Id, c.Name, c.InstancesJson }));
+}
+<div id="dashboard"
+     data-interval="@settings.SearchIntervalSeconds"
+     data-step="@settings.SearchRadiusStepMeters"
+     data-max="@settings.MaxRadiusMeters"
+     data-locations='@System.Text.Json.JsonSerializer.Serialize(Model.Locations)'
+     data-proxies='@System.Text.Json.JsonSerializer.Serialize(Model.Proxies)'
+     data-radar-configs='@radarConfigsJson'
+     data-dynamic='@System.Text.Json.JsonSerializer.Serialize(new { Model.DynamicData.Enabled, Model.DynamicData.Provider })'>
+</div>
+
+<div class="panel-shell">
+    <div class="panel-header">
+        <div class="instance-nav">
+            <button id="prevInstance" class="icon-btn" title="Previous instance">&#9664;</button>
+            <div id="instanceDots" class="instance-dots"></div>
+            <button id="nextInstance" class="icon-btn" title="Next instance">&#9654;</button>
+            <span id="instanceLabel" class="instance-label">Instance 1</span>
+        </div>
+        <div class="panel-actions">
+            <button id="loadConfigBtn" class="btn small">Load Config</button>
+            <select id="configSelect" class="input small"></select>
+            <button id="saveConfigBtn" class="btn small">Save Config</button>
+        </div>
+    </div>
+
+    @for (int i = 0; i < 5; i++)
+    {
+        var idx = i + 1;
+        <section class="instance-panel" id="panel-@idx" style="display:none">
+            <div class="panel-controls">
+                <div class="control-group">
+                    <label>Search Names</label>
+                    <div id="names-@idx" class="multiselect" data-instance="@idx"></div>
+                </div>
+                <div class="control-group">
+                    <label>Proxy Location</label>
+                    <select id="proxy-@idx" class="input small"><option value="">None</option></select>
+                </div>
+                <div class="control-group">
+                    <label class="checkbox"><input type="checkbox" id="loop-@idx" /> Loop</label>
+                </div>
+                <div class="control-group">
+                    <button class="btn primary" onclick="Dashboard.start(@idx)">Start</button>
+                    <button class="btn danger" onclick="Dashboard.stop(@idx)">Stop</button>
+                    <span class="config-summary" id="cfg-@idx"></span>
+                </div>
+            </div>
+            <div class="map-wrap"><div id="map-@idx" class="map"></div>
+                <div id="flash-@idx" class="flash-banner" style="display:none"></div>
+            </div>
+            <div class="status-panel" id="status-@idx"></div>
+            <div class="dynamic-panel">
+                <div class="dynamic-head">
+                    <button class="link-btn" onclick="Dashboard.toggleDynamic(@idx)">Dynamic Data &#9662;</button>
+                    <span id="dd-state-@idx" class="muted small"></span>
+                </div>
+                <div id="dd-body-@idx" style="display:none">
+                    <div class="dynamic-row">
+                        <input id="dd-prompt-@idx" class="input" placeholder="Ask about the search results..." />
+                        <button class="btn small" onclick="Dashboard.fetchDynamic(@idx)">Ask</button>
+                    </div>
+                    <div id="dd-result-@idx" class="dynamic-result muted small"></div>
+                </div>
+            </div>
+        </section>
+    }
+
+    <section class="instance-panel" id="panel-6" style="display:none">
+        <div class="panel-controls">
+            <div class="control-group"><span class="instance-title">WiseGuard Panel</span></div>
+            <div class="control-group">
+                <button id="micBtn" class="btn primary">Start Listening</button>
+                <span id="micState" class="muted small">idle</span>
+                <span id="decibels" class="muted small"></span>
+            </div>
+            <div class="control-group">
+                <button class="link-btn" onclick="Guard.toggleConfig()">Word Config &#9662;</button>
+                <button class="link-btn" onclick="Guard.toggleVideoMax()">Maximize Video</button>
+            </div>
+        </div>
+        <div id="wordConfig" style="display:none" class="card pad">
+            <div class="dynamic-row">
+                <input id="wordInput" class="input" placeholder="Add tracked word(s), comma separated" />
+                <button class="btn small" onclick="Guard.addWord()">Add</button>
+            </div>
+            <div id="wordList" class="chip-row"></div>
+        </div>
+        <div class="guard-grid">
+            <div class="card pad">
+                <h3>Transcript</h3>
+                <div id="transcript" class="transcript"></div>
+                <div id="interim" class="interim"></div>
+            </div>
+            <div class="card pad">
+                <h3>Word Counts</h3>
+                <div id="wordCounts" class="counts"></div>
+            </div>
+            <div class="card pad video-card">
+                <div class="dynamic-row">
+                    <input id="videoUrl" class="input" placeholder="YouTube URL" />
+                    <button class="btn small" onclick="Guard.addVideo()">Add Video</button>
+                </div>
+                <div id="videoPlayer" class="video-frame"></div>
+                <label class="checkbox"><input type="checkbox" id="videoLoop" checked /> Loop</label>
+                <div id="videoList" class="video-list"></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/js/dashboard.js" asp-append-version="true"></script>
+<script src="~/js/guard.js" asp-append-version="true"></script>
+<script>Dashboard.init(); Guard.init();</script>
