@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -13,8 +14,18 @@ namespace MVCWiseGuardAlertsWatch.Controllers
     public class AccountController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
-        public AccountController(AppDbContext db) => _db = db;
+        public AccountController(AppDbContext db, Microsoft.Extensions.Configuration.IConfiguration config)
+        {
+            _db = db;
+            _config = config;
+        }
+
+        /// <summary>Google OAuth is only offered when credentials are configured.</summary>
+        private bool GoogleConfigured =>
+            !string.IsNullOrWhiteSpace(_config["Authentication:Google:ClientId"]) &&
+            !string.IsNullOrWhiteSpace(_config["Authentication:Google:ClientSecret"]);
 
         [HttpGet]
         [AllowAnonymous]
@@ -117,6 +128,52 @@ namespace MVCWiseGuardAlertsWatch.Controllers
 
         [HttpPost]
         [Authorize]
+        // ---------- Google OAuth (external login) ----------
+
+        /// <summary>Challenge the Google provider (button hidden unless configured).</summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ExternalLogin(string? returnUrl = null)
+        {
+            if (!GoogleConfigured) return RedirectToAction("Login", new { returnUrl });
+            var redirect = Url.Action(nameof(ExternalCallback), "Account", new { returnUrl }, Request.Scheme);
+            return Challenge(new AuthenticationProperties { RedirectUri = redirect }, "Google");
+        }
+
+        /// <summary>Google callback - find-or-create the account by email, then sign in.</summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalCallback(string? returnUrl = null)
+        {
+            var result = await HttpContext.AuthenticateAsync("Google");
+            if (!result.Succeeded || result.Principal is null)
+            {
+                TempData["Error"] = "Google sign-in was cancelled or failed. Please try again.";
+                return RedirectToAction("Login", new { returnUrl });
+            }
+            var email = result.Principal.FindFirstValue(ClaimTypes.Email)?.Trim().ToLower();
+            if (string.IsNullOrEmpty(email))
+            {
+                TempData["Error"] = "Your Google account did not provide an email address.";
+                return RedirectToAction("Login", new { returnUrl });
+            }
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user is null)
+            {
+                // OAuth accounts get an unguessable password: only Google can sign in
+                user = new User
+                {
+                    Email = email,
+                    FullName = result.Principal.FindFirstValue(ClaimTypes.Name),
+                    PasswordHash = HashPassword("oauth:" + Guid.NewGuid().ToString("N"))
+                };
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+            }
+            await SignIn(user);
+            return LocalRedirect(returnUrl ?? "/");
+        }
+
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {

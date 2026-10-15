@@ -89,6 +89,25 @@ python3 tests/e2e/run_validation.py            # --skip-build / --keep-server op
   are set (the live app requires login; the check is read-only).
 - Requires: .NET 8 SDK, Python 3 + `pip install playwright && playwright install chromium`.
 
+## Authentication
+
+- **Default admin account** — seeded automatically at startup: email `admin`,
+  password `admin@123` (hint shown on the login page). Change it after first
+  login via the register/reset flows in a production deployment.
+- **Google OAuth (optional)** — set `Authentication:Google:ClientId` and
+  `Authentication:Google:ClientSecret` in `appsettings.json` (or env) and a
+  "Sign in with Google" button appears on the login page. The Google scheme is
+  only registered when both values are present; OAuth accounts are created on
+  first sign-in with an unguessable password, so they can only sign in via
+  Google.
+
+## Geocoding
+
+Searches and proxy geocoding use Nominatim with an automatic
+[photon.komoot.io](https://photon.komoot.io) fallback: when Nominatim is
+rate-limited (HTTP 429) or unreachable, the same OSM data is served through
+Photon so search keeps working.
+
 ## Database schema auto-upgrade
 
 `EnsureCreated()` only creates a missing SQLite file — it never alters an

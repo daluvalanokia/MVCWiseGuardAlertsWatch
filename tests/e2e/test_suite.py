@@ -106,6 +106,30 @@ async def t_auth(ctx):
     await p.wait_for_load_state("networkidle")
     check("T04", "logout returns to login page", "Login" in p.url or "login" in p.url, p.url)
     await p.close()
+
+    # T28 default admin account (admin / admin@123) logs in
+    p = await ctx.new_page()
+    await p.goto(f"{BASE_URL}/Account/Login", wait_until="networkidle")
+    await p.fill('input[name="Email"]', "admin")
+    await p.fill('input[name="Password"]', "admin@123")
+    await p.click('.auth-card form button.btn.primary')
+    await p.wait_for_load_state("networkidle")
+    await p.wait_for_timeout(1500)
+    check("T28", "default admin/admin@123 logs in to dashboard",
+          "/" in p.url and "login" not in p.url.lower(), p.url)
+    # log the admin back out so the rest of the suite starts from a clean context
+    await p.click('header form button[type="submit"]')
+    await p.wait_for_load_state("networkidle")
+    await p.close()
+
+    # T29 Google button: hidden while unconfigured; admin hint present
+    p = await ctx.new_page()
+    await p.goto(f"{BASE_URL}/Account/Login", wait_until="networkidle")
+    body = await p.inner_text("body")
+    has_btn = await p.locator("a[href*='ExternalLogin']").count() > 0
+    check("T29", "Google button hidden when unconfigured + default-admin hint shown",
+          (not has_btn) and "admin@123" in body, f"btn={has_btn}")
+    await p.close()
     return dashboard_text
 
 

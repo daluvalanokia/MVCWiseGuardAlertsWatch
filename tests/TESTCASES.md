@@ -65,6 +65,8 @@ Report: `tests/e2e/report.json` (per-case pass/fail + JS console errors).
 | ID | Case | Expected |
 |----|------|----------|
 | T27 | Zero JS errors | No pageerror/console.error during the whole suite |
+| T28 | Default admin auth | `admin` / `admin@123` logs in to the dashboard |
+| T29 | Google OAuth gating | "Sign in with Google" hidden while OAuth is unconfigured; default-admin hint shown |
 
 ## Live parity (optional)
 
