@@ -89,6 +89,16 @@ python3 tests/e2e/run_validation.py            # --skip-build / --keep-server op
   are set (the live app requires login; the check is read-only).
 - Requires: .NET 8 SDK, Python 3 + `pip install playwright && playwright install chromium`.
 
+## Database schema auto-upgrade
+
+`EnsureCreated()` only creates a missing SQLite file — it never alters an
+existing one, so databases created by older builds crashed on startup queries
+with `SqliteException: no such column: p.DisplayName`. On boot,
+`Services/DbSchemaUpgrader.Apply()` now compares the EF model against each
+table's `PRAGMA table_info` and `ALTER TABLE ... ADD COLUMN`s anything missing
+(NOT NULL columns get a type-appropriate DEFAULT). Verified by starting the
+app against a stale fixture DB: the column is added and the dashboard renders.
+
 ## Dashboard (v2 — matches wiseguardalertswatch.base44.app)
 
 - Light theme, 2x3 grid with all 6 instances visible (no rotating carousel).

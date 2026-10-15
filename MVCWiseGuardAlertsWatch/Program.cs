@@ -34,6 +34,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    DbSchemaUpgrader.Apply(db); // upgrade DBs created by older builds (adds missing columns)
 }
 
 if (!app.Environment.IsDevelopment())
