@@ -68,6 +68,27 @@ dotnet run --launch-profile http   # or: ASPNETCORE_URLS=http://0.0.0.0:8080 dot
 
 Forwarded ports (5193 / 8080) open the app in the codespace's browser preview.
 
+## Testing (E2E suite + recursive validation loop)
+
+29 end-to-end test cases (catalog: `tests/TESTCASES.md`) covering auth, dashboard
+structure, radar search (live Nominatim), radar configs, the WiseGuard panel,
+settings/proxies, and JS-error health — verified for parity against
+wiseguardalertswatch.base44.app.
+
+Run the full recursive validation cycle (build -> restart server -> suite -> report):
+
+```bash
+python3 tests/e2e/run_validation.py            # --skip-build / --keep-server optional
+```
+
+- Report: `tests/e2e/report.json` (per-case pass/fail + console errors).
+- Agent loop: on failures, fix the app/source for each failing case and re-run
+  until `ALL TESTS PASSED` (that is how the suite itself was driven to green:
+  23 -> 27 -> 28 -> 29 of 29).
+- Live parity check L01 runs only when `E2E_LIVE_EMAIL` / `E2E_LIVE_PASSWORD`
+  are set (the live app requires login; the check is read-only).
+- Requires: .NET 8 SDK, Python 3 + `pip install playwright && playwright install chromium`.
+
 ## Dashboard (v2 — matches wiseguardalertswatch.base44.app)
 
 - Light theme, 2x3 grid with all 6 instances visible (no rotating carousel).

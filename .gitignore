@@ -7,3 +7,5 @@ wwwroot/uploads/
 *.db-shm
 *.db-wal
 secret.key
+tests/e2e/report.json
+tests/e2e/server.log

@@ -57,9 +57,11 @@ window.Dashboard = (function () {
         const s = st(inst);
         const raw = document.getElementById(`names-${inst}`).value;
         s.names = raw.split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-        s.names.forEach(n => { if (!s.selected.has(n) && s.selected.size === 0) s.selected.add(n); });
-        // keep only existing selections; default-select all when nothing selected
-        if (s.selected.size === 0) s.names.forEach(n => s.selected.add(n));
+        s.deselected ||= new Set();
+        // Newly typed names are selected by default unless explicitly unchecked.
+        s.names.forEach(n => { if (!s.deselected.has(n)) s.selected.add(n); });
+        // Drop selections for names that were removed from the input.
+        s.selected.forEach(n => { if (!s.names.includes(n)) s.selected.delete(n); });
     }
 
     function renderNamesPop(inst) {
@@ -80,15 +82,13 @@ window.Dashboard = (function () {
 
     function toggleName(inst, name) {
         const s = st(inst);
-        if (s.selected.has(name)) s.selected.delete(name); else s.selected.add(name);
+        if (s.selected.has(name)) { s.selected.delete(name); s.deselected.add(name); }
+        else { s.selected.add(name); s.deselected.delete(name); }
         renderNamesPop(inst);
     }
 
     function onNamesInput(inst) {
-        const s = st(inst);
-        parseNames(inst);
-        // drop selections for removed names
-        s.selected.forEach(n => { if (!s.names.includes(n)) s.selected.delete(n); });
+        parseNames(inst); // auto-select new names, prune removed ones
     }
 
     // ---------- proxy select ----------
@@ -329,6 +329,7 @@ window.Dashboard = (function () {
             const s = st(inst);
             const center = getCenter(inst);
             s.map = L.map(`map-${inst}`, { zoomControl: false, attributionControl: false }).setView(center, 13);
+            (window._maps ||= {})[inst] = s.map; // exposed for E2E tests
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(s.map);
             s.pulse = L.circle(center, { radius: settings.step, color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.05, weight: 1 }).addTo(s.map);
             s.center = L.marker(center).addTo(s.map);
